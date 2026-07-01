@@ -5,7 +5,7 @@
 
 ## 運作方式
 
-1. `scripts/fetch_post.py`：用 headless 瀏覽器（Playwright）在不登入的狀態下讀取粉專最新一篇貼文
+1. `scripts/fetch_post.py`：用 Firecrawl API 在不登入的狀態下讀取粉專最新一篇貼文
 2. `scripts/claude_filter.py`：呼叫 Claude API 判斷貼文是否與醫療/治療相關，並整理重點摘要
 3. `scripts/telegram_notify.py`：把摘要推播到你的 Telegram
 4. `scripts/run.py`：串起以上流程，並用 `state.json` 記錄上次處理過的貼文，避免重複通知
@@ -36,18 +36,23 @@
 
 前往 https://console.anthropic.com/ 註冊並建立一組 API Key。
 
-### 3. 在 GitHub 設定 Secrets
+### 3. 取得 Firecrawl API Key
+
+前往 https://www.firecrawl.dev/ 註冊，在 Dashboard → API Keys 取得一組 Key（免費方案有額度可先測試）。
+
+### 4. 在 GitHub 設定 Secrets
 
 到這個 repo 的 GitHub 頁面：**Settings → Secrets and variables → Actions → New repository secret**，
-新增以下三組（名稱要完全一致）：
+新增以下四組（名稱要完全一致）：
 
 | Secret 名稱 | 內容 |
 |---|---|
 | `ANTHROPIC_API_KEY` | 你的 Anthropic API Key |
+| `FIRECRAWL_API_KEY` | 你的 Firecrawl API Key |
 | `TELEGRAM_BOT_TOKEN` | 你的 Telegram Bot Token |
 | `TELEGRAM_CHAT_ID` | 你的 Telegram Chat ID |
 
-### 4. 手動測試一次
+### 5. 手動測試一次
 
 到 repo 的 **Actions** 分頁 → 選 **Daily FB Page Digest** → **Run workflow**，手動觸發一次，
 確認 Telegram 有收到訊息（或 Actions log 顯示「貼文不相關，略過通知」也代表流程是正常的）。
@@ -57,8 +62,8 @@
 ```bash
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
-./.venv/bin/playwright install chromium
 
+export FIRECRAWL_API_KEY=xxx
 export ANTHROPIC_API_KEY=xxx
 export TELEGRAM_BOT_TOKEN=xxx
 export TELEGRAM_CHAT_ID=xxx

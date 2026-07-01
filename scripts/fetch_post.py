@@ -1,10 +1,9 @@
+import os
 import re
-from playwright.sync_api import sync_playwright
 
-USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/125.0 Safari/537.36"
-)
+from firecrawl import Firecrawl
+
+POST_LINK_PATTERN = re.compile(r"story_fbid=|/posts/(pfbid|\d)")
 
 
 def _clean_url(url):
@@ -21,48 +20,47 @@ def _extract_post_id(url):
     return url
 
 
-def fetch_latest_post(page_id):
+def fetch_latest_post(page_id, api_key=None):
+    client = Firecrawl(api_key=api_key or os.environ["FIRECRAWL_API_KEY"])
     profile_url = f"https://www.facebook.com/profile.php?id={page_id}"
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page(user_agent=USER_AGENT, locale="zh-TW")
-        page.goto(profile_url, timeout=30000)
-        page.wait_for_timeout(4000)
+    profile_doc = client.scrape(
+        profile_url,
+        formats=["links"],
+        wait_for=4000,
+        headers={"Accept-Language": "zh-TW,zh;q=0.9"},
+    )
 
-        hrefs = page.eval_on_selector_all("a", "els => els.map(e => e.href)")
-        permalinks = []
-        for href in hrefs:
-            if "story_fbid=" in href or re.search(r"/posts/(pfbid|\d)", href):
-                cleaned = _clean_url(href)
-                if cleaned not in permalinks:
-                    permalinks.append(cleaned)
+    permalinks = []
+    for href in profile_doc.links or []:
+        if POST_LINK_PATTERN.search(href):
+            cleaned = _clean_url(href)
+            if cleaned not in permalinks:
+                permalinks.append(cleaned)
 
-        if not permalinks:
-            browser.close()
-            return None
+    if not permalinks:
+        return None
 
-        post_url = permalinks[0]
-        page.goto(post_url, timeout=30000)
-        page.wait_for_timeout(3000)
+    post_url = permalinks[0]
+    post_doc = client.scrape(
+        post_url,
+        formats=["markdown"],
+        wait_for=3000,
+        headers={"Accept-Language": "zh-TW,zh;q=0.9"},
+    )
 
-        description = page.eval_on_selector(
-            'meta[property="og:description"]', "el => el && el.content"
-        )
-        og_url = page.eval_on_selector(
-            'meta[property="og:url"]', "el => el && el.content"
-        )
+    metadata = post_doc.metadata
+    description = getattr(metadata, "og_description", None) if metadata else None
+    canonical_url = getattr(metadata, "og_url", None) if metadata else None
 
-        browser.close()
+    if not description:
+        return None
 
-        if not description:
-            return None
-
-        return {
-            "id": _extract_post_id(post_url),
-            "url": og_url or post_url,
-            "text": description.strip(),
-        }
+    return {
+        "id": _extract_post_id(post_url),
+        "url": canonical_url or post_url,
+        "text": description.strip(),
+    }
 
 
 if __name__ == "__main__":
