@@ -23,12 +23,21 @@ def _extract_post_id(url):
     return url
 
 
-def _meta_content(page, prop):
-    el = page.query_selector(f'meta[property="{prop}"]')
-    return el.get_attribute("content") if el else None
+def _clean_preview_text(text):
+    text = text.replace("查看更多", "")
+    text = re.sub(r"\s*\n\s*", "", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text.strip()
 
 
 def fetch_latest_post(page_id):
+    """Reads the currently visible latest post from the logged-out profile page.
+
+    Facebook forces a login wall on the individual post permalink page, so this
+    only captures the truncated preview text shown on the profile feed itself
+    (cut off at "查看更多"), not the full post body. The permalink is still
+    included so a logged-in human can tap through to read the rest.
+    """
     profile_url = f"https://www.facebook.com/profile.php?id={page_id}"
 
     with sync_playwright() as p:
@@ -36,8 +45,6 @@ def fetch_latest_post(page_id):
         page = browser.new_page(user_agent=USER_AGENT, locale="zh-TW")
         page.goto(profile_url, timeout=30000)
         page.wait_for_timeout(4000)
-
-        print(f"[fetch_post] profile page title={page.title()!r} url={page.url!r}")
 
         hrefs = page.eval_on_selector_all("a", "els => els.map(e => e.href)")
         permalinks = []
@@ -47,34 +54,18 @@ def fetch_latest_post(page_id):
                 if cleaned not in permalinks:
                     permalinks.append(cleaned)
 
-        print(f"[fetch_post] found {len(permalinks)} permalink(s)")
-
-        if not permalinks:
-            browser.close()
-            return None
-
-        post_url = permalinks[0]
-        page.goto(post_url, timeout=30000)
-        page.wait_for_timeout(3000)
-
-        print(f"[fetch_post] post page title={page.title()!r} url={page.url!r}")
-
-        description = _meta_content(page, "og:description")
-        og_url = _meta_content(page, "og:url")
-
-        if not description:
-            body_snippet = page.inner_text("body")[:300]
-            print(f"[fetch_post] no og:description found. body snippet: {body_snippet!r}")
+        message_el = page.query_selector('[data-ad-preview="message"]')
+        preview_text = message_el.inner_text() if message_el else None
 
         browser.close()
 
-        if not description:
+        if not permalinks or not preview_text:
             return None
 
         return {
-            "id": _extract_post_id(post_url),
-            "url": og_url or post_url,
-            "text": description.strip(),
+            "id": _extract_post_id(permalinks[0]),
+            "url": permalinks[0],
+            "text": _clean_preview_text(preview_text),
         }
 
 

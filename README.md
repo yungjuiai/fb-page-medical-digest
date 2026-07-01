@@ -5,7 +5,7 @@
 
 ## 運作方式
 
-1. `scripts/fetch_post.py`：用 headless 瀏覽器（Playwright）在不登入的狀態下讀取粉專最新一篇貼文
+1. `scripts/fetch_post.py`：用 headless 瀏覽器（Playwright）在不登入的狀態下讀取粉專最新一篇貼文的預覽文字
 2. `scripts/llm_filter.py`：呼叫 Groq API（Llama 3.3 模型）判斷貼文是否與醫療/治療相關，並整理重點摘要
 3. `scripts/telegram_notify.py`：把摘要推播到你的 Telegram
 4. `scripts/run.py`：串起以上流程，並用 `state.json` 記錄上次處理過的貼文，避免重複通知
@@ -13,12 +13,15 @@
 
 ## 已知限制
 
-- Facebook 現在要求登入才能瀏覽粉專內容，本專案採用「不登入、只讀取當下顯示的最新一篇貼文」的方式，
-  所以**如果粉專一天內發多篇貼文，可能只會抓到執行當下最新的那一篇**。如果想降低漏抓機率，
+- **只能拿到貼文開頭被截斷的預覽文字，不是完整內容。** Facebook 對未登入訪客只會顯示貼文預覽（在「查看更多」處截斷），
+  點進單篇貼文頁面會強制要求登入。這是刻意的技術取捨：曾測試過用真實帳號登入抓取，但 FB 會對自動化瀏覽器
+  的登入 session 做文字亂序等反爬蟲處理，並可能讓帳號被標記為異常，風險大於效益，所以放棄這條路。
+  每則推播訊息都會附上原文連結，你自己手機上的 FB 是登入狀態，點進去就能看到完整內容。
+- 因為不登入，**如果粉專一天內發多篇貼文，可能只會抓到執行當下最新的那一篇**。如果想降低漏抓機率，
   可以把 `.github/workflows/daily-digest.yml` 裡的 cron 改成一天執行多次（例如每 6 小時一次）。
 - Facebook 隨時可能調整頁面結構或加強反爬蟲機制，若某天機器人抓不到貼文，代表 `scripts/fetch_post.py`
   需要更新（可以請我幫忙修）。曾測試過 Firecrawl 這類第三方擷取 API，但官方明確不支援 facebook.com，
-  所以改用 Playwright 直接在 GitHub Actions 裡跑無頭瀏覽器；雲端 IP 仍有被 FB 判定異常流量而擋下的風險。
+  所以改用 Playwright 直接在 GitHub Actions 裡跑無頭瀏覽器。
 - 只有「醫療/治療相關」的貼文才會推播；其他貼文（活動宣傳、閒聊等）會被過濾掉不通知。想調整判斷標準，
   修改 `scripts/llm_filter.py` 裡的 `PROMPT_TEMPLATE` 即可。
 
