@@ -5,7 +5,7 @@
 
 ## 運作方式
 
-1. `scripts/fetch_post.py`：用 Firecrawl API 在不登入的狀態下讀取粉專最新一篇貼文
+1. `scripts/fetch_post.py`：用 headless 瀏覽器（Playwright）在不登入的狀態下讀取粉專最新一篇貼文
 2. `scripts/llm_filter.py`：呼叫 Groq API（Llama 3.3 模型）判斷貼文是否與醫療/治療相關，並整理重點摘要
 3. `scripts/telegram_notify.py`：把摘要推播到你的 Telegram
 4. `scripts/run.py`：串起以上流程，並用 `state.json` 記錄上次處理過的貼文，避免重複通知
@@ -17,7 +17,8 @@
   所以**如果粉專一天內發多篇貼文，可能只會抓到執行當下最新的那一篇**。如果想降低漏抓機率，
   可以把 `.github/workflows/daily-digest.yml` 裡的 cron 改成一天執行多次（例如每 6 小時一次）。
 - Facebook 隨時可能調整頁面結構或加強反爬蟲機制，若某天機器人抓不到貼文，代表 `scripts/fetch_post.py`
-  需要更新（可以請我幫忙修）。
+  需要更新（可以請我幫忙修）。曾測試過 Firecrawl 這類第三方擷取 API，但官方明確不支援 facebook.com，
+  所以改用 Playwright 直接在 GitHub Actions 裡跑無頭瀏覽器；雲端 IP 仍有被 FB 判定異常流量而擋下的風險。
 - 只有「醫療/治療相關」的貼文才會推播；其他貼文（活動宣傳、閒聊等）會被過濾掉不通知。想調整判斷標準，
   修改 `scripts/llm_filter.py` 裡的 `PROMPT_TEMPLATE` 即可。
 
@@ -36,23 +37,20 @@
 
 前往 https://console.groq.com/ 註冊，在 API Keys 頁面建立一組 Key。
 
-### 3. 取得 Firecrawl API Key
-
-前往 https://www.firecrawl.dev/ 註冊，在 Dashboard → API Keys 取得一組 Key（免費方案有額度可先測試）。
-
-### 4. 在 GitHub 設定 Secrets
+### 3. 在 GitHub 設定 Secrets
 
 到這個 repo 的 GitHub 頁面：**Settings → Secrets and variables → Actions → New repository secret**，
-新增以下四組（名稱要完全一致）：
+新增以下三組（名稱要完全一致）：
 
 | Secret 名稱 | 內容 |
 |---|---|
 | `GROQ_API_KEY` | 你的 Groq API Key |
-| `FIRECRAWL_API_KEY` | 你的 Firecrawl API Key |
 | `TELEGRAM_BOT_TOKEN` | 你的 Telegram Bot Token |
 | `TELEGRAM_CHAT_ID` | 你的 Telegram Chat ID |
 
-### 5. 手動測試一次
+（`FIRECRAWL_API_KEY` 已不再使用，可以從 Secrets 裡刪除，或留著也沒關係。）
+
+### 4. 手動測試一次
 
 到 repo 的 **Actions** 分頁 → 選 **Daily FB Page Digest** → **Run workflow**，手動觸發一次，
 確認 Telegram 有收到訊息（或 Actions log 顯示「貼文不相關，略過通知」也代表流程是正常的）。
@@ -62,8 +60,8 @@
 ```bash
 python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
+./.venv/bin/playwright install chromium
 
-export FIRECRAWL_API_KEY=xxx
 export GROQ_API_KEY=xxx
 export TELEGRAM_BOT_TOKEN=xxx
 export TELEGRAM_CHAT_ID=xxx
