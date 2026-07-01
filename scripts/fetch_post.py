@@ -23,6 +23,11 @@ def _extract_post_id(url):
     return url
 
 
+def _meta_content(page, prop):
+    el = page.query_selector(f'meta[property="{prop}"]')
+    return el.get_attribute("content") if el else None
+
+
 def fetch_latest_post(page_id):
     profile_url = f"https://www.facebook.com/profile.php?id={page_id}"
 
@@ -32,6 +37,8 @@ def fetch_latest_post(page_id):
         page.goto(profile_url, timeout=30000)
         page.wait_for_timeout(4000)
 
+        print(f"[fetch_post] profile page title={page.title()!r} url={page.url!r}")
+
         hrefs = page.eval_on_selector_all("a", "els => els.map(e => e.href)")
         permalinks = []
         for href in hrefs:
@@ -39,6 +46,8 @@ def fetch_latest_post(page_id):
                 cleaned = _clean_url(href)
                 if cleaned not in permalinks:
                     permalinks.append(cleaned)
+
+        print(f"[fetch_post] found {len(permalinks)} permalink(s)")
 
         if not permalinks:
             browser.close()
@@ -48,12 +57,14 @@ def fetch_latest_post(page_id):
         page.goto(post_url, timeout=30000)
         page.wait_for_timeout(3000)
 
-        description = page.eval_on_selector(
-            'meta[property="og:description"]', "el => el && el.content"
-        )
-        og_url = page.eval_on_selector(
-            'meta[property="og:url"]', "el => el && el.content"
-        )
+        print(f"[fetch_post] post page title={page.title()!r} url={page.url!r}")
+
+        description = _meta_content(page, "og:description")
+        og_url = _meta_content(page, "og:url")
+
+        if not description:
+            body_snippet = page.inner_text("body")[:300]
+            print(f"[fetch_post] no og:description found. body snippet: {body_snippet!r}")
 
         browser.close()
 
