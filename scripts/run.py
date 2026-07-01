@@ -2,7 +2,7 @@ import json
 import os
 import sys
 
-from claude_filter import classify_and_summarize
+from llm_filter import classify_and_summarize
 from fetch_post import fetch_latest_post
 from telegram_notify import send_message
 

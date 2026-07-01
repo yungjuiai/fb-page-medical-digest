@@ -1,12 +1,12 @@
 # 達叔礙唬爛 FB 粉專 醫療摘要機器人
 
-每天自動檢查 Facebook 粉專「達叔礙唬爛」的最新貼文，用 Claude 判斷是否為醫療/治療相關內容，
+每天自動檢查 Facebook 粉專「達叔礙唬爛」的最新貼文，用 Groq（免費 LLM API）判斷是否為醫療/治療相關內容，
 若是則整理重點並透過 Telegram Bot 推播給你。透過 GitHub Actions 排程，不需要自己開機。
 
 ## 運作方式
 
 1. `scripts/fetch_post.py`：用 Firecrawl API 在不登入的狀態下讀取粉專最新一篇貼文
-2. `scripts/claude_filter.py`：呼叫 Claude API 判斷貼文是否與醫療/治療相關，並整理重點摘要
+2. `scripts/llm_filter.py`：呼叫 Groq API（Llama 3.3 模型）判斷貼文是否與醫療/治療相關，並整理重點摘要
 3. `scripts/telegram_notify.py`：把摘要推播到你的 Telegram
 4. `scripts/run.py`：串起以上流程，並用 `state.json` 記錄上次處理過的貼文，避免重複通知
 5. `.github/workflows/daily-digest.yml`：GitHub Actions 排程，每天台灣時間 08:00 自動執行一次
@@ -19,7 +19,7 @@
 - Facebook 隨時可能調整頁面結構或加強反爬蟲機制，若某天機器人抓不到貼文，代表 `scripts/fetch_post.py`
   需要更新（可以請我幫忙修）。
 - 只有「醫療/治療相關」的貼文才會推播；其他貼文（活動宣傳、閒聊等）會被過濾掉不通知。想調整判斷標準，
-  修改 `scripts/claude_filter.py` 裡的 `PROMPT_TEMPLATE` 即可。
+  修改 `scripts/llm_filter.py` 裡的 `PROMPT_TEMPLATE` 即可。
 
 ## 首次設定
 
@@ -32,9 +32,9 @@
    `https://api.telegram.org/bot<TOKEN>/getUpdates`
    在回傳的 JSON 裡找到 `"chat":{"id":數字, ...}`，這個數字就是你的 **Chat ID**
 
-### 2. 取得 Anthropic API Key
+### 2. 取得 Groq API Key（免費，不需信用卡）
 
-前往 https://console.anthropic.com/ 註冊並建立一組 API Key。
+前往 https://console.groq.com/ 註冊，在 API Keys 頁面建立一組 Key。
 
 ### 3. 取得 Firecrawl API Key
 
@@ -47,7 +47,7 @@
 
 | Secret 名稱 | 內容 |
 |---|---|
-| `ANTHROPIC_API_KEY` | 你的 Anthropic API Key |
+| `GROQ_API_KEY` | 你的 Groq API Key |
 | `FIRECRAWL_API_KEY` | 你的 Firecrawl API Key |
 | `TELEGRAM_BOT_TOKEN` | 你的 Telegram Bot Token |
 | `TELEGRAM_CHAT_ID` | 你的 Telegram Chat ID |
@@ -64,7 +64,7 @@ python3 -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 
 export FIRECRAWL_API_KEY=xxx
-export ANTHROPIC_API_KEY=xxx
+export GROQ_API_KEY=xxx
 export TELEGRAM_BOT_TOKEN=xxx
 export TELEGRAM_CHAT_ID=xxx
 cd scripts && ../.venv/bin/python3 run.py
