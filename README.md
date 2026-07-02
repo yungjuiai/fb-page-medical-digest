@@ -1,7 +1,10 @@
 # 達叔礙唬爛 FB 粉專 醫療摘要機器人
 
-每天自動檢查 Facebook 粉專「達叔礙唬爛」的最新貼文，用 Groq（免費 LLM API）判斷是否為醫療/治療相關內容，
+每 30 分鐘自動檢查一次 Facebook 粉專「達叔礙唬爛」的最新貼文，用 Groq（免費 LLM API）判斷是否為醫療/治療相關內容，
 若是則整理重點並透過 Telegram Bot 推播給你。透過 GitHub Actions 排程，不需要自己開機。
+
+這個 repo 是 **Public**，這樣 GitHub Actions 分鐘數完全不受免費額度限制（Public repo 的 Actions 分鐘數無限）；
+程式碼公開可見，但所有金鑰都存在 GitHub Secrets 裡，不會外洩。
 
 ## 運作方式
 
@@ -9,7 +12,7 @@
 2. `scripts/llm_filter.py`：呼叫 Groq API（Llama 3.3 模型）判斷貼文是否與醫療/治療相關，並整理重點摘要
 3. `scripts/telegram_notify.py`：把摘要推播到你的 Telegram
 4. `scripts/run.py`：串起以上流程，並用 `state.json` 記錄上次處理過的貼文，避免重複通知
-5. `.github/workflows/daily-digest.yml`：GitHub Actions 排程，每天台灣時間 08:00 自動執行一次
+5. `.github/workflows/daily-digest.yml`：GitHub Actions 排程，每 30 分鐘自動執行一次
 
 ## 已知限制
 
@@ -17,8 +20,8 @@
   點進單篇貼文頁面會強制要求登入。這是刻意的技術取捨：曾測試過用真實帳號登入抓取，但 FB 會對自動化瀏覽器
   的登入 session 做文字亂序等反爬蟲處理，並可能讓帳號被標記為異常，風險大於效益，所以放棄這條路。
   每則推播訊息都會附上原文連結，你自己手機上的 FB 是登入狀態，點進去就能看到完整內容。
-- 因為不登入，**如果粉專一天內發多篇貼文，可能只會抓到執行當下最新的那一篇**。如果想降低漏抓機率，
-  可以把 `.github/workflows/daily-digest.yml` 裡的 cron 改成一天執行多次（例如每 6 小時一次）。
+- 因為不登入，**如果粉專在同一次檢查間隔內連發兩篇以上貼文，中間那篇會被跳過**。目前排程是每 30 分鐘
+  檢查一次，漏抓機率已經很低；想更頻繁可以調整 `.github/workflows/daily-digest.yml` 裡的 cron。
 - Facebook 隨時可能調整頁面結構或加強反爬蟲機制，若某天機器人抓不到貼文，代表 `scripts/fetch_post.py`
   需要更新（可以請我幫忙修）。曾測試過 Firecrawl 這類第三方擷取 API，但官方明確不支援 facebook.com，
   所以改用 Playwright 直接在 GitHub Actions 裡跑無頭瀏覽器。
@@ -51,11 +54,9 @@
 | `TELEGRAM_BOT_TOKEN` | 你的 Telegram Bot Token |
 | `TELEGRAM_CHAT_ID` | 你的 Telegram Chat ID |
 
-（`FIRECRAWL_API_KEY` 已不再使用，可以從 Secrets 裡刪除，或留著也沒關係。）
-
 ### 4. 手動測試一次
 
-到 repo 的 **Actions** 分頁 → 選 **Daily FB Page Digest** → **Run workflow**，手動觸發一次，
+到 repo 的 **Actions** 分頁 → 選 **FB Page Medical Digest** → **Run workflow**，手動觸發一次，
 確認 Telegram 有收到訊息（或 Actions log 顯示「貼文不相關，略過通知」也代表流程是正常的）。
 
 ## 本機開發
