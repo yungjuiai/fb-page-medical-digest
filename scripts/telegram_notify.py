@@ -13,7 +13,6 @@ def send_message(text, bot_token=None, chat_id=None):
         data={
             "chat_id": chat_id,
             "text": text,
-            "parse_mode": "Markdown",
             "disable_web_page_preview": False,
         },
         timeout=20,

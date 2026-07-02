@@ -40,7 +40,7 @@ def main():
 
     if is_relevant:
         message = (
-            f"📌 *{PAGE_NAME}* 新貼文重點（預覽摘要，完整內容請點連結）\n\n"
+            f"📌 {PAGE_NAME} 新貼文重點（預覽摘要，完整內容請點連結）\n\n"
             f"{summary}\n\n"
             f"原文：{post['url']}"
         )
