@@ -15,7 +15,7 @@ def load_state():
     if os.path.exists(STATE_PATH):
         with open(STATE_PATH, encoding="utf-8") as f:
             return json.load(f)
-    return {"last_post_id": None}
+    return {"last_post_id": None, "last_post_hash": None}
 
 
 def save_state(state):
@@ -31,7 +31,7 @@ def main():
         print("No post found (page may be blocking access or has no public posts).")
         return
 
-    if post["id"] == state.get("last_post_id"):
+    if post["text_hash"] == state.get("last_post_hash"):
         print("No new post since last check.")
         return
 
@@ -50,6 +50,7 @@ def main():
         print("New post is not medical/treatment related, skipping notification.")
 
     state["last_post_id"] = post["id"]
+    state["last_post_hash"] = post["text_hash"]
     save_state(state)
 
 

@@ -1,3 +1,4 @@
+import hashlib
 import re
 from playwright.sync_api import sync_playwright
 
@@ -62,10 +63,17 @@ def fetch_latest_post(page_id):
         if not permalinks or not preview_text:
             return None
 
+        cleaned_text = _clean_preview_text(preview_text)
+
         return {
             "id": _extract_post_id(permalinks[0]),
             "url": permalinks[0],
-            "text": _clean_preview_text(preview_text),
+            "text": cleaned_text,
+            # Facebook's pfbid is derived from the viewing session, not the
+            # post itself, so the same post can get a different pfbid on a
+            # later, cookie-less scrape. Hash the visible text instead so
+            # dedup doesn't depend on that unstable token.
+            "text_hash": hashlib.sha256(cleaned_text.encode("utf-8")).hexdigest(),
         }
 
 
