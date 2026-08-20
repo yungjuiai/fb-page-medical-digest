@@ -3,7 +3,7 @@ import os
 
 from groq import Groq
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "openai/gpt-oss-120b"
 
 PROMPT_TEMPLATE = """你是一個粉絲專頁貼文篩選助手。以下是「達叔礙唬爛」這個醫療粉絲專頁的一篇貼文，
 因為 Facebook 限制，只能取得貼文開頭被截斷的預覽文字（可能在句子中間就結束）。
