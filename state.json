@@ -1,10 +1,6 @@
 {
   "seen": [
     {
-      "id": "pfbid02WJowMqmK56cpFrCvww9KUN6SW7wdJjKYeHZFBqAWvPeNTNhUwsLnXNZyQvYCPkEFl",
-      "hash": "79f99e21d5e16a34dcf8be2a300e915855e1fe285f3b29fc22f90e7e9dcc2642"
-    },
-    {
       "id": "pfbid02hcQ8eAMhbRBmcq51ANpMBGm8hW384aA3mkCaeku25wf6E2oj5nN6cDq837vu8vUpl",
       "hash": "557912fd4ef7d039fa6628ad56f86b80c8f9b36195a91d947597d75846471400"
     },
@@ -59,6 +55,10 @@
     {
       "id": "pfbid02SENkF85Z4pmfcpQTk5QZ5g9GJb5DTTG44xafKKbvnZ5M7XFcX2etDiFth9kRsJbNl",
       "hash": "1f47625aeeb4a824b9de74bf6ebfff5898d243f3edb44c2b24f16ea46571204a"
+    },
+    {
+      "id": "pfbid02sYNxD69PjD6Q9Lg588qtcJ27j9KWgP6pesshjZSyfQaV8svzd62YnCQf188SAf4cl",
+      "hash": "12d632643d0fc9ee137d86b2ec2e1f0f550bc2cbbe4dba615f7e1a0b735ad2e5"
     }
   ]
 }
